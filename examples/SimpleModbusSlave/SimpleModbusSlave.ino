@@ -4,6 +4,7 @@
 
 
 #include <SimpleModbusSlave.h>
+#include "HW_Rev1.h"
 
 SimpleModbusSlave slave(1);   // Initialize the slave with the ID 1
 uint16_t regs[10];            // Allocate a mapping of 10 values
@@ -13,7 +14,7 @@ void setup() {
     regs[0] = 0x1234;
 
     // The transfer speed is set to 115200 bauds
-    slave.setup(115200);
+    slave.setup(115200, 33);//DriverEn pin is 33
 }
 
 void loop() {
