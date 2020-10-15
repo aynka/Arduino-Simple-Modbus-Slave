@@ -34,10 +34,11 @@
 class SimpleModbusSlave {
 public:
     SimpleModbusSlave(uint8_t slave);
-    void setup(long baud);
+    void setup(long baud, int  RS485DE_Pin);
     int loop(uint16_t *tab_reg, uint16_t nb_reg);
 private:
     int _slave;
+    int _pin_DE;
 };
 
 #endif /* SimpleModbusSlave_h */

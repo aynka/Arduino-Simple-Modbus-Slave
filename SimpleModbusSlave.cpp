@@ -46,8 +46,9 @@ SimpleModbusSlave::SimpleModbusSlave(uint8_t slave) {
 	}
 }
 
-void SimpleModbusSlave::setup(long baud) {
-	Serial.begin(baud);
+void SimpleModbusSlave::setup(long baud, int RS485DE_Pin) {
+	Serial2.begin(baud);
+	_pin_DE = RS485DE_Pin;
 }
 
 // Check CRC of msg
@@ -67,7 +68,9 @@ static int build_response_basis(uint8_t slave, uint8_t function, uint8_t* rsp) {
 
 static void send_msg(uint8_t *msg, uint8_t msg_length) {
 	add_crc16(msg, msg_length);
-	Serial.write(msg, msg_length + 2);
+	digitalWrite(_pin_DE, 1);
+	Serial2.write(msg, msg_length + 2);
+	digitalWrite(_pin_DE, 0);
 }
 
 static uint8_t response_exception(uint8_t slave, uint8_t function, uint8_t exception_code, uint8_t *rsp) {
@@ -84,8 +87,8 @@ static void flush(void) {
 
 	// Wait a moment to receive the remaining garbage but avoid getting stuck
 	// because the line is saturated
-	while (Serial.available() && i++ < 10) {
-		Serial.flush();
+	while (Serial2.available() && i++ < 10) {
+		Serial2.flush();
 		delay(3);
 	}
 }
@@ -109,15 +112,15 @@ static int receive(uint8_t *req, uint8_t _slave) {
 		// The timeout is defined to ~10 ms between each bytes.  Precision is
 		// not that important so I rather to avoid millis() to apply the KISS
 		// principle (millis overflows after 50 days, etc) */
-		if (!Serial.available()) {
+		if (!Serial2.available()) {
 			i = 0;
-			while (!Serial.available()) {
+			while (!Serial2.available()) {
 				if (++i == 10) return -1 - MODBUS_INFORMATIVE_RX_TIMEOUT; // Too late, bye
 				delay(1);
 			}
 		}
 
-		req[req_index] = Serial.read();
+		req[req_index] = Serial2.read();
 
 		// Moves the pointer to receive other data 
 		req_index++;
@@ -226,7 +229,7 @@ int SimpleModbusSlave::loop(uint16_t* tab_reg, uint16_t nb_reg) {
 	int rc = 0;
 	uint8_t req[_MODBUSINO_RTU_MAX_ADU_LENGTH];
 
-	if (Serial.available()) {
+	if (Serial2.available()) {
 		rc = receive(req, _slave);
 		if (rc > 0) {
 			reply(tab_reg, nb_reg, req, rc, _slave);
